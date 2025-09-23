@@ -62,7 +62,6 @@
     <h1>Plan My Way</h1>
     <nav>
       <a href="index.html">Home</a>
-      <a href="destinations.html">Destinations</a>
       <a href="itinerary.html">Itinerary</a>
       <a href="contact.html">Contact</a>
     </nav>
@@ -72,16 +71,10 @@
     <h2>Plan Your Itinerary</h2>
     
     <div class="itinerary-controls">
-      <button onclick="loadSavedDestinations()">📍 Load Saved Destinations</button>
       <button onclick="addDay()">➕ Add Day</button>
       <button onclick="saveItinerary()">💾 Save Itinerary</button>
       <button onclick="loadItinerary()">📂 Load Itinerary</button>
       <button onclick="clearAll()">🗑️ Clear All</button>
-    </div>
-    
-    <div id="saved-destinations" style="display: none; background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-      <h3>Your Saved Destinations:</h3>
-      <div id="destinations-list"></div>
     </div>
     
     <div id="itinerary-container"></div>
@@ -275,37 +268,6 @@
         document.getElementById("itinerary-container").innerHTML = '';
         dayCount = 0;
       }
-    }
-
-    function loadSavedDestinations() {
-      const savedDestinations = JSON.parse(localStorage.getItem('savedDestinations') || '[]');
-      const container = document.getElementById('saved-destinations');
-      const list = document.getElementById('destinations-list');
-      
-      if (savedDestinations.length > 0) {
-        list.innerHTML = savedDestinations.map(dest => 
-          `<button onclick="quickAddDestination('${dest}')" style="margin: 5px; background: #2196f3;">${dest}</button>`
-        ).join('');
-        container.style.display = 'block';
-      } else {
-        alert('No saved destinations found. Visit the Destinations page to save some!');
-      }
-    }
-
-    function quickAddDestination(destination) {
-      if (dayCount === 0) {
-        addDay();
-      }
-      addDestination(dayCount);
-      
-      // Fill in the destination name
-      const lastDay = document.getElementById(`day-${dayCount}`);
-      const destinations = lastDay.querySelectorAll('.destination');
-      const lastDestination = destinations[destinations.length - 1];
-      lastDestination.querySelector("input[type='text']").value = destination;
-      saveItinerary();
-      
-      alert(`Added "${destination}" to Day ${dayCount}!`);
     }
 
     function shareItinerary() {
