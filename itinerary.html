@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plan My Way - Itinerary</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .day-box {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .day-box h3 {
+      color: #4caf50;
+    }
+    .activity, .destination {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .day-box input, 
+    .day-box textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .buttons {
+      margin-top: 10px;
+    }
+    .buttons button {
+      background: #4caf50;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .buttons button:hover {
+      background: #45a049;
+    }
+    #share-btn {
+      display: block;
+      margin: 30px auto;
+      background: #2196f3;
+    }
+    #share-btn:hover {
+      background: #0b7dda;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Plan My Way</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="destinations.html">Destinations</a>
+      <a href="itinerary.html">Itinerary</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Plan Your Itinerary</h2>
+    <div id="itinerary-container"></div>
+
+    <button onclick="addDay()">+ Add Day</button>
+
+    <!-- Share button -->
+    <button id="share-btn" onclick="shareItinerary()">📤 Share Itinerary</button>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Plan My Way. All rights reserved.</p>
+  </footer>
+
+  <script>
+    let dayCount = 0;
+
+    function addDay() {
+      dayCount++;
+      const container = document.getElementById("itinerary-container");
+
+      const dayBox = document.createElement("div");
+      dayBox.classList.add("day-box");
+      dayBox.setAttribute("id", `day-${dayCount}`);
+
+      dayBox.innerHTML = `
+        <h3>Day ${dayCount}</h3>
+        <label>Notes for the Day:</label>
+        <textarea placeholder="General notes for this day..."></textarea>
+        
+        <div class="buttons">
+          <button type="button" onclick="addDestination(${dayCount})">+ Add Destination</button>
+          <button type="button" onclick="addActivity(${dayCount})">+ Add Activity</button>
+        </div>
+        
+        <div class="items" id="items-day-${dayCount}"></div>
+      `;
+
+      container.appendChild(dayBox);
+    }
+
+    function addDestination(dayId) {
+      const itemsContainer = document.getElementById(`items-day-${dayId}`);
+      const destination = document.createElement("div");
+      destination.classList.add("destination");
+
+      destination.innerHTML = `
+        <h4>Destination</h4>
+        <input type="text" placeholder="Destination name">
+        <input type="time">
+        <textarea placeholder="Notes about this destination..."></textarea>
+      `;
+
+      itemsContainer.appendChild(destination);
+    }
+
+    function addActivity(dayId) {
+      const itemsContainer = document.getElementById(`items-day-${dayId}`);
+      const activity = document.createElement("div");
+      activity.classList.add("activity");
+
+      activity.innerHTML = `
+        <h4>Activity</h4>
+        <input type="text" placeholder="Activity name">
+        <input type="time">
+        <textarea placeholder="Notes about this activity..."></textarea>
+      `;
+
+      itemsContainer.appendChild(activity);
+    }
+
+    function shareItinerary() {
+      let itineraryText = "My Travel Itinerary:\n\n";
+      const days = document.querySelectorAll(".day-box");
+
+      days.forEach((day, index) => {
+        itineraryText += `Day ${index + 1}:\n`;
+
+        const notes = day.querySelector("textarea").value;
+        if (notes) itineraryText += ` Notes: ${notes}\n`;
+
+        const items = day.querySelectorAll(".items > div");
+        items.forEach((item) => {
+          const title = item.querySelector("input[type='text']").value;
+          const time = item.querySelector("input[type='time']").value;
+          const note = item.querySelector("textarea").value;
+          itineraryText += ` - ${title || (item.classList.contains("destination") ? "Destination" : "Activity")}`;
+          if (time) itineraryText += ` at ${time}`;
+          if (note) itineraryText += ` (${note})`;
+          itineraryText += `\n`;
+        });
+
+        itineraryText += "\n";
+      });
+
+      if (navigator.share) {
+        navigator.share({
+          title: "My Travel Itinerary",
+          text: itineraryText
+        }).catch(err => console.log("Share canceled:", err));
+      } else {
+        // fallback for browsers without Web Share API
+        alert("Sharing is not supported in this browser.\n\n" + itineraryText);
+      }
+    }
+  </script>
+
+</body>
+</html>
