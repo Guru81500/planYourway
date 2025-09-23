@@ -19,18 +19,97 @@
   </header>
 
   <main>
-    <h2>Top Destinations</h2>
-    <ul>
-      <li>Paris, France</li>
-      <li>Tokyo, Japan</li>
-      <li>New York City, USA</li>
-      <li>Rome, Italy</li>
-    </ul>
+    <h2>Popular Travel Destinations</h2>
+    <p>Discover amazing places around the world for your next adventure. Click on any destination to learn more!</p>
+    
+    <div class="destination-grid">
+      <div class="destination-card">
+        <img src="https://images.unsplash.com/photo-1502602898536-47ad22581b52?w=400&h=200&fit=crop" alt="Paris, France">
+        <div class="destination-card-content">
+          <h3>Paris, France</h3>
+          <p>The City of Light offers romantic streets, world-class museums, and iconic landmarks like the Eiffel Tower.</p>
+          <a href="#" class="btn" onclick="addToItinerary('Paris, France')">Add to Itinerary</a>
+        </div>
+      </div>
+      
+      <div class="destination-card">
+        <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=200&fit=crop" alt="Tokyo, Japan">
+        <div class="destination-card-content">
+          <h3>Tokyo, Japan</h3>
+          <p>Experience the perfect blend of traditional culture and cutting-edge technology in Japan's vibrant capital.</p>
+          <a href="#" class="btn" onclick="addToItinerary('Tokyo, Japan')">Add to Itinerary</a>
+        </div>
+      </div>
+      
+      <div class="destination-card">
+        <img src="https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400&h=200&fit=crop" alt="New York City, USA">
+        <div class="destination-card-content">
+          <h3>New York City, USA</h3>
+          <p>The city that never sleeps, featuring Broadway shows, world-famous museums, and the iconic Statue of Liberty.</p>
+          <a href="#" class="btn" onclick="addToItinerary('New York City, USA')">Add to Itinerary</a>
+        </div>
+      </div>
+      
+      <div class="destination-card">
+        <img src="https://images.unsplash.com/photo-1552832230-c0197047daf9?w=400&h=200&fit=crop" alt="Rome, Italy">
+        <div class="destination-card-content">
+          <h3>Rome, Italy</h3>
+          <p>Step back in time exploring ancient ruins, magnificent architecture, and enjoying authentic Italian cuisine.</p>
+          <a href="#" class="btn" onclick="addToItinerary('Rome, Italy')">Add to Itinerary</a>
+        </div>
+      </div>
+      
+      <div class="destination-card">
+        <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=200&fit=crop" alt="Santorini, Greece">
+        <div class="destination-card-content">
+          <h3>Santorini, Greece</h3>
+          <p>Beautiful white-washed buildings, stunning sunsets, and crystal-clear waters make this island paradise unforgettable.</p>
+          <a href="#" class="btn" onclick="addToItinerary('Santorini, Greece')">Add to Itinerary</a>
+        </div>
+      </div>
+      
+      <div class="destination-card">
+        <img src="https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&h=200&fit=crop" alt="Dubai, UAE">
+        <div class="destination-card-content">
+          <h3>Dubai, UAE</h3>
+          <p>A modern metropolis featuring luxury shopping, ultramodern architecture, and world-class entertainment.</p>
+          <a href="#" class="btn" onclick="addToItinerary('Dubai, UAE')">Add to Itinerary</a>
+        </div>
+      </div>
+    </div>
+    
+    <div id="success-message" style="display: none; background: #d4edda; color: #155724; padding: 15px; border-radius: 6px; margin-top: 20px; border: 1px solid #c3e6cb;">
+      <strong>✅ Destination added!</strong> Go to the <a href="itinerary.html" style="color: #155724;">Itinerary page</a> to plan your trip.
+    </div>
   </main>
 
   <footer>
     <p>&copy; 2025 Plan My Way. All rights reserved.</p>
   </footer>
+
+  <script>
+    function addToItinerary(destination) {
+      // Save to localStorage for the itinerary page
+      let savedDestinations = JSON.parse(localStorage.getItem('savedDestinations') || '[]');
+      
+      if (!savedDestinations.includes(destination)) {
+        savedDestinations.push(destination);
+        localStorage.setItem('savedDestinations', JSON.stringify(savedDestinations));
+        
+        // Show success message
+        const message = document.getElementById('success-message');
+        message.style.display = 'block';
+        message.scrollIntoView({ behavior: 'smooth' });
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+          message.style.display = 'none';
+        }, 5000);
+      } else {
+        alert('This destination is already in your saved list!');
+      }
+    }
+  </script>
 
 </body>
 </html>

@@ -70,9 +70,21 @@
 
   <main>
     <h2>Plan Your Itinerary</h2>
+    
+    <div class="itinerary-controls">
+      <button onclick="loadSavedDestinations()">📍 Load Saved Destinations</button>
+      <button onclick="addDay()">➕ Add Day</button>
+      <button onclick="saveItinerary()">💾 Save Itinerary</button>
+      <button onclick="loadItinerary()">📂 Load Itinerary</button>
+      <button onclick="clearAll()">🗑️ Clear All</button>
+    </div>
+    
+    <div id="saved-destinations" style="display: none; background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+      <h3>Your Saved Destinations:</h3>
+      <div id="destinations-list"></div>
+    </div>
+    
     <div id="itinerary-container"></div>
-
-    <button onclick="addDay()">+ Add Day</button>
 
     <!-- Share button -->
     <button id="share-btn" onclick="shareItinerary()">📤 Share Itinerary</button>
@@ -85,6 +97,11 @@
   <script>
     let dayCount = 0;
 
+    // Load itinerary on page load
+    window.addEventListener('load', function() {
+      loadItinerary();
+    });
+
     function addDay() {
       dayCount++;
       const container = document.getElementById("itinerary-container");
@@ -94,34 +111,51 @@
       dayBox.setAttribute("id", `day-${dayCount}`);
 
       dayBox.innerHTML = `
-        <h3>Day ${dayCount}</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Day ${dayCount}</h3>
+          <button onclick="removeDay(${dayCount})" style="background: #f44336; font-size: 14px; padding: 5px 10px;">❌ Remove Day</button>
+        </div>
         <label>Notes for the Day:</label>
-        <textarea placeholder="General notes for this day..."></textarea>
+        <textarea placeholder="General notes for this day..." onchange="saveItinerary()"></textarea>
         
         <div class="buttons">
-          <button type="button" onclick="addDestination(${dayCount})">+ Add Destination</button>
-          <button type="button" onclick="addActivity(${dayCount})">+ Add Activity</button>
+          <button type="button" onclick="addDestination(${dayCount})">📍 Add Destination</button>
+          <button type="button" onclick="addActivity(${dayCount})">🎯 Add Activity</button>
         </div>
         
         <div class="items" id="items-day-${dayCount}"></div>
       `;
 
       container.appendChild(dayBox);
+      saveItinerary();
+    }
+
+    function removeDay(dayId) {
+      if (confirm('Are you sure you want to remove this day?')) {
+        const dayElement = document.getElementById(`day-${dayId}`);
+        dayElement.remove();
+        saveItinerary();
+      }
     }
 
     function addDestination(dayId) {
       const itemsContainer = document.getElementById(`items-day-${dayId}`);
       const destination = document.createElement("div");
       destination.classList.add("destination");
+      const itemId = Date.now();
 
       destination.innerHTML = `
-        <h4>Destination</h4>
-        <input type="text" placeholder="Destination name">
-        <input type="time">
-        <textarea placeholder="Notes about this destination..."></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4>📍 Destination</h4>
+          <button onclick="removeItem(this)" style="background: #f44336; font-size: 12px; padding: 3px 8px;">✕</button>
+        </div>
+        <input type="text" placeholder="Destination name" onchange="saveItinerary()">
+        <input type="time" onchange="saveItinerary()">
+        <textarea placeholder="Notes about this destination..." onchange="saveItinerary()"></textarea>
       `;
 
       itemsContainer.appendChild(destination);
+      saveItinerary();
     }
 
     function addActivity(dayId) {
@@ -130,31 +164,155 @@
       activity.classList.add("activity");
 
       activity.innerHTML = `
-        <h4>Activity</h4>
-        <input type="text" placeholder="Activity name">
-        <input type="time">
-        <textarea placeholder="Notes about this activity..."></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4>🎯 Activity</h4>
+          <button onclick="removeItem(this)" style="background: #f44336; font-size: 12px; padding: 3px 8px;">✕</button>
+        </div>
+        <input type="text" placeholder="Activity name" onchange="saveItinerary()">
+        <input type="time" onchange="saveItinerary()">
+        <textarea placeholder="Notes about this activity..." onchange="saveItinerary()"></textarea>
       `;
 
       itemsContainer.appendChild(activity);
+      saveItinerary();
+    }
+
+    function removeItem(button) {
+      if (confirm('Are you sure you want to remove this item?')) {
+        button.closest('.destination, .activity').remove();
+        saveItinerary();
+      }
+    }
+
+    function saveItinerary() {
+      const itineraryData = {
+        dayCount: dayCount,
+        days: []
+      };
+
+      const days = document.querySelectorAll(".day-box");
+      days.forEach((day) => {
+        const dayData = {
+          id: day.id,
+          notes: day.querySelector("textarea").value,
+          items: []
+        };
+
+        const items = day.querySelectorAll(".items > div");
+        items.forEach((item) => {
+          const itemData = {
+            type: item.classList.contains("destination") ? "destination" : "activity",
+            name: item.querySelector("input[type='text']").value,
+            time: item.querySelector("input[type='time']").value,
+            notes: item.querySelector("textarea").value
+          };
+          dayData.items.push(itemData);
+        });
+
+        itineraryData.days.push(dayData);
+      });
+
+      localStorage.setItem('travelItinerary', JSON.stringify(itineraryData));
+    }
+
+    function loadItinerary() {
+      const savedItinerary = localStorage.getItem('travelItinerary');
+      if (savedItinerary) {
+        const itineraryData = JSON.parse(savedItinerary);
+        dayCount = itineraryData.dayCount || 0;
+
+        // Clear current itinerary
+        document.getElementById("itinerary-container").innerHTML = '';
+
+        // Rebuild itinerary
+        itineraryData.days.forEach((dayData, index) => {
+          addDay();
+          const currentDay = document.getElementById(dayData.id);
+          if (currentDay) {
+            currentDay.querySelector("textarea").value = dayData.notes || '';
+
+            dayData.items.forEach((itemData) => {
+              if (itemData.type === "destination") {
+                addDestination(index + 1);
+              } else {
+                addActivity(index + 1);
+              }
+
+              const items = currentDay.querySelectorAll(".items > div");
+              const lastItem = items[items.length - 1];
+              if (lastItem) {
+                lastItem.querySelector("input[type='text']").value = itemData.name || '';
+                lastItem.querySelector("input[type='time']").value = itemData.time || '';
+                lastItem.querySelector("textarea").value = itemData.notes || '';
+              }
+            });
+          }
+        });
+      }
+    }
+
+    function clearAll() {
+      if (confirm('Are you sure you want to clear your entire itinerary? This cannot be undone.')) {
+        localStorage.removeItem('travelItinerary');
+        document.getElementById("itinerary-container").innerHTML = '';
+        dayCount = 0;
+      }
+    }
+
+    function loadSavedDestinations() {
+      const savedDestinations = JSON.parse(localStorage.getItem('savedDestinations') || '[]');
+      const container = document.getElementById('saved-destinations');
+      const list = document.getElementById('destinations-list');
+      
+      if (savedDestinations.length > 0) {
+        list.innerHTML = savedDestinations.map(dest => 
+          `<button onclick="quickAddDestination('${dest}')" style="margin: 5px; background: #2196f3;">${dest}</button>`
+        ).join('');
+        container.style.display = 'block';
+      } else {
+        alert('No saved destinations found. Visit the Destinations page to save some!');
+      }
+    }
+
+    function quickAddDestination(destination) {
+      if (dayCount === 0) {
+        addDay();
+      }
+      addDestination(dayCount);
+      
+      // Fill in the destination name
+      const lastDay = document.getElementById(`day-${dayCount}`);
+      const destinations = lastDay.querySelectorAll('.destination');
+      const lastDestination = destinations[destinations.length - 1];
+      lastDestination.querySelector("input[type='text']").value = destination;
+      saveItinerary();
+      
+      alert(`Added "${destination}" to Day ${dayCount}!`);
     }
 
     function shareItinerary() {
-      let itineraryText = "My Travel Itinerary:\n\n";
+      let itineraryText = "🌍 My Travel Itinerary:\n\n";
       const days = document.querySelectorAll(".day-box");
 
+      if (days.length === 0) {
+        alert("Your itinerary is empty! Add some days and destinations first.");
+        return;
+      }
+
       days.forEach((day, index) => {
-        itineraryText += `Day ${index + 1}:\n`;
+        itineraryText += `📅 Day ${index + 1}:\n`;
 
         const notes = day.querySelector("textarea").value;
-        if (notes) itineraryText += ` Notes: ${notes}\n`;
+        if (notes) itineraryText += `📝 Notes: ${notes}\n`;
 
         const items = day.querySelectorAll(".items > div");
         items.forEach((item) => {
           const title = item.querySelector("input[type='text']").value;
           const time = item.querySelector("input[type='time']").value;
           const note = item.querySelector("textarea").value;
-          itineraryText += ` - ${title || (item.classList.contains("destination") ? "Destination" : "Activity")}`;
+          const icon = item.classList.contains("destination") ? "📍" : "🎯";
+          
+          itineraryText += `${icon} ${title || (item.classList.contains("destination") ? "Destination" : "Activity")}`;
           if (time) itineraryText += ` at ${time}`;
           if (note) itineraryText += ` (${note})`;
           itineraryText += `\n`;
@@ -163,14 +321,26 @@
         itineraryText += "\n";
       });
 
+      itineraryText += "Created with Plan My Way 🚀";
+
       if (navigator.share) {
         navigator.share({
           title: "My Travel Itinerary",
           text: itineraryText
         }).catch(err => console.log("Share canceled:", err));
       } else {
-        // fallback for browsers without Web Share API
-        alert("Sharing is not supported in this browser.\n\n" + itineraryText);
+        // Create a text area and copy to clipboard
+        const textArea = document.createElement('textarea');
+        textArea.value = itineraryText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          alert("Itinerary copied to clipboard!");
+        } catch (err) {
+          alert("Sharing is not supported in this browser.\n\n" + itineraryText);
+        }
+        document.body.removeChild(textArea);
       }
     }
   </script>

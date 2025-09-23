@@ -20,23 +20,87 @@
 
   <main>
     <h2>Contact Us</h2>
-    <form>
-      <label for="name">Name:</label><br>
-      <input type="text" id="name" name="name"><br><br>
+    <p>Have questions about planning your trip? We'd love to help! Send us a message and we'll get back to you soon.</p>
+    
+    <form id="contactForm" onsubmit="handleSubmit(event)">
+      <label for="name">Name: *</label>
+      <input type="text" id="name" name="name" required>
 
-      <label for="email">Email:</label><br>
-      <input type="email" id="email" name="email"><br><br>
+      <label for="email">Email: *</label>
+      <input type="email" id="email" name="email" required>
 
-      <label for="message">Message:</label><br>
-      <textarea id="message" name="message" rows="5"></textarea><br><br>
+      <label for="subject">Subject:</label>
+      <input type="text" id="subject" name="subject" placeholder="What's this about?">
 
-      <button type="submit">Send</button>
+      <label for="message">Message: *</label>
+      <textarea id="message" name="message" rows="5" required placeholder="Tell us how we can help you plan your perfect trip..."></textarea>
+
+      <button type="submit">📧 Send Message</button>
     </form>
+    
+    <div id="form-message" style="display: none; margin-top: 20px; padding: 15px; border-radius: 6px;"></div>
+    
+    <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+      <h3>Other Ways to Reach Us</h3>
+      <p><strong>📧 Email:</strong> hello@planmyway.com</p>
+      <p><strong>🐦 Twitter:</strong> @planmyway</p>
+      <p><strong>📱 Instagram:</strong> @planmyway</p>
+      <p><strong>⏰ Response Time:</strong> We typically respond within 24 hours</p>
+    </div>
   </main>
 
   <footer>
     <p>&copy; 2025 Plan My Way. All rights reserved.</p>
   </footer>
+
+  <script>
+    function handleSubmit(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const subject = document.getElementById('subject').value;
+      const message = document.getElementById('message').value;
+      
+      // Simulate form submission (in a real app, this would send to a server)
+      const messageDiv = document.getElementById('form-message');
+      
+      // Show loading state
+      const submitBtn = document.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = '📤 Sending...';
+      submitBtn.disabled = true;
+      
+      // Simulate network delay
+      setTimeout(() => {
+        // Show success message
+        messageDiv.style.display = 'block';
+        messageDiv.style.background = '#d4edda';
+        messageDiv.style.color = '#155724';
+        messageDiv.style.border = '1px solid #c3e6cb';
+        messageDiv.innerHTML = `
+          <strong>✅ Message sent successfully!</strong><br>
+          Thank you ${name}! We've received your message and will get back to you at ${email} within 24 hours.
+        `;
+        
+        // Reset form
+        document.getElementById('contactForm').reset();
+        
+        // Reset button
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+        
+        // Scroll to message
+        messageDiv.scrollIntoView({ behavior: 'smooth' });
+        
+        // Hide message after 10 seconds
+        setTimeout(() => {
+          messageDiv.style.display = 'none';
+        }, 10000);
+        
+      }, 1500);
+    }
+  </script>
 
 </body>
 </html>
