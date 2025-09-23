@@ -86,8 +86,26 @@
     
     <div id="itinerary-container"></div>
 
-    <!-- Share button -->
-    <button id="share-btn" onclick="shareItinerary()">📤 Share Itinerary</button>
+    <!-- Action buttons -->
+    <div style="text-align: center; margin-top: 30px;">
+      <button id="view-btn" onclick="viewItinerary()" style="background: #9c27b0; margin-right: 15px;">👁️ View Itinerary</button>
+      <button id="share-btn" onclick="shareItinerary()">📤 Share Itinerary</button>
+    </div>
+    
+    <!-- Itinerary Preview Modal -->
+    <div id="itinerary-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; max-width: 800px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px;">
+          <h2 style="color: #9c27b0; margin: 0;">🌍 Your Travel Itinerary</h2>
+          <button onclick="closeItineraryView()" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px;">✕</button>
+        </div>
+        <div id="itinerary-preview-content"></div>
+        <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+          <button onclick="shareItinerary()" style="background: #2196f3; margin-right: 10px;">📤 Share</button>
+          <button onclick="printItinerary()" style="background: #4caf50;">🖨️ Print</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer>
@@ -343,6 +361,132 @@
         document.body.removeChild(textArea);
       }
     }
+
+    function viewItinerary() {
+      const days = document.querySelectorAll(".day-box");
+      
+      if (days.length === 0) {
+        alert("Your itinerary is empty! Add some days and destinations first.");
+        return;
+      }
+
+      let htmlContent = '';
+      
+      days.forEach((day, index) => {
+        const dayNumber = index + 1;
+        htmlContent += `
+          <div style="margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 5px solid #4caf50;">
+            <h3 style="color: #4caf50; margin-bottom: 15px; display: flex; align-items: center;">
+              <span style="background: #4caf50; color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">${dayNumber}</span>
+              Day ${dayNumber}
+            </h3>`;
+
+        const notes = day.querySelector("textarea").value;
+        if (notes) {
+          htmlContent += `<div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #ffc107;">
+            <strong>📝 Day Notes:</strong> ${notes}
+          </div>`;
+        }
+
+        const items = day.querySelectorAll(".items > div");
+        if (items.length > 0) {
+          items.forEach((item) => {
+            const title = item.querySelector("input[type='text']").value;
+            const time = item.querySelector("input[type='time']").value;
+            const note = item.querySelector("textarea").value;
+            const isDestination = item.classList.contains("destination");
+            const icon = isDestination ? "📍" : "🎯";
+            const bgColor = isDestination ? "#fff8e1" : "#e3f2fd";
+            const borderColor = isDestination ? "#ff9800" : "#2196f3";
+            
+            htmlContent += `
+              <div style="background: ${bgColor}; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${borderColor};">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <strong style="color: #333; font-size: 16px;">${icon} ${title || (isDestination ? "Destination" : "Activity")}</strong>
+                  ${time ? `<span style="background: white; padding: 4px 8px; border-radius: 15px; font-size: 14px; color: #666;">🕒 ${time}</span>` : ''}
+                </div>
+                ${note ? `<p style="color: #666; margin: 0; font-style: italic;">${note}</p>` : ''}
+              </div>`;
+          });
+        } else {
+          htmlContent += `<p style="color: #999; font-style: italic;">No activities or destinations added for this day.</p>`;
+        }
+        
+        htmlContent += `</div>`;
+      });
+
+      // Add summary at the end
+      const totalDays = days.length;
+      const totalItems = document.querySelectorAll(".destination, .activity").length;
+      const totalDestinations = document.querySelectorAll(".destination").length;
+      const totalActivities = document.querySelectorAll(".activity").length;
+
+      htmlContent += `
+        <div style="background: linear-gradient(135deg, #4caf50, #45a049); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px;">
+          <h3 style="margin-bottom: 15px; color: white;">📊 Trip Summary</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+            <div><strong>${totalDays}</strong><br>Days</div>
+            <div><strong>${totalDestinations}</strong><br>Destinations</div>
+            <div><strong>${totalActivities}</strong><br>Activities</div>
+            <div><strong>${totalItems}</strong><br>Total Items</div>
+          </div>
+        </div>`;
+
+      document.getElementById('itinerary-preview-content').innerHTML = htmlContent;
+      document.getElementById('itinerary-modal').style.display = 'block';
+      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+
+    function closeItineraryView() {
+      document.getElementById('itinerary-modal').style.display = 'none';
+      document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    function printItinerary() {
+      const printContent = document.getElementById('itinerary-preview-content').innerHTML;
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>My Travel Itinerary</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h2 { color: #4caf50; text-align: center; margin-bottom: 30px; }
+              h3 { color: #4caf50; }
+              .no-print { display: none; }
+              @media print {
+                body { margin: 0; }
+                .no-print { display: none !important; }
+              }
+            </style>
+          </head>
+          <body>
+            <h2>🌍 My Travel Itinerary</h2>
+            ${printContent}
+            <div style="text-align: center; margin-top: 30px; color: #666; font-size: 12px;">
+              Generated by Plan My Way on ${new Date().toLocaleDateString()}
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('itinerary-modal');
+      if (event.target === modal) {
+        closeItineraryView();
+      }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeItineraryView();
+      }
+    });
   </script>
 
 </body>
