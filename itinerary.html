@@ -5,56 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Plan My Way - Itinerary</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .day-box {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-    .day-box h3 {
-      color: #4caf50;
-    }
-    .activity, .destination {
-      margin-top: 10px;
-      padding: 10px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .day-box input, 
-    .day-box textarea {
-      width: 100%;
-      margin-top: 6px;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    .buttons {
-      margin-top: 10px;
-    }
-    .buttons button {
-      background: #4caf50;
-      color: white;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-    .buttons button:hover {
-      background: #45a049;
-    }
-    #share-btn {
-      display: block;
-      margin: 30px auto;
-      background: #2196f3;
-    }
-    #share-btn:hover {
-      background: #0b7dda;
-    }
-  </style>
 </head>
 <body>
 
@@ -69,6 +19,27 @@
 
   <main>
     <h2>Plan Your Itinerary</h2>
+
+    <section class="trip-summary" aria-label="Trip summary">
+      <div class="summary-card">
+        <strong id="total-days">0</strong>
+        <span>Days</span>
+      </div>
+      <div class="summary-card">
+        <strong id="total-destinations">0</strong>
+        <span>Destinations</span>
+      </div>
+      <div class="summary-card">
+        <strong id="total-activities">0</strong>
+        <span>Activities</span>
+      </div>
+      <div class="summary-card">
+        <strong id="total-items">0</strong>
+        <span>Total Items</span>
+      </div>
+    </section>
+
+    <p id="save-status" class="save-status" aria-live="polite">Ready to plan</p>
     
     <div class="itinerary-controls">
       <button onclick="addDay()">➕ Add Day</button>
@@ -76,26 +47,30 @@
       <button onclick="loadItinerary()">📂 Load Itinerary</button>
       <button onclick="clearAll()">🗑️ Clear All</button>
     </div>
+
+    <div id="empty-state" class="empty-state">
+      <h3>Start your travel plan</h3>
+      <p>Add your first day, then fill it with destinations, activities, and notes.</p>
+      <button onclick="addDay()">➕ Add First Day</button>
+    </div>
     
     <div id="itinerary-container"></div>
 
-    <!-- Action buttons -->
-    <div style="text-align: center; margin-top: 30px;">
-      <button id="view-btn" onclick="viewItinerary()" style="background: #9c27b0; margin-right: 15px;">👁️ View Itinerary</button>
+    <div class="itinerary-actions">
+      <button id="view-btn" onclick="viewItinerary()">👁️ View Itinerary</button>
       <button id="share-btn" onclick="shareItinerary()">📤 Share Itinerary</button>
     </div>
     
-    <!-- Itinerary Preview Modal -->
-    <div id="itinerary-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; max-width: 800px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 15px;">
-          <h2 style="color: #9c27b0; margin: 0;">🌍 Your Travel Itinerary</h2>
-          <button onclick="closeItineraryView()" style="background: #f44336; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; font-size: 18px;">✕</button>
+    <div id="itinerary-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="itinerary-modal-title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="itinerary-modal-title">🌍 Your Travel Itinerary</h2>
+          <button class="close-button" onclick="closeItineraryView()" aria-label="Close itinerary preview">✕</button>
         </div>
         <div id="itinerary-preview-content"></div>
-        <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-          <button onclick="shareItinerary()" style="background: #2196f3; margin-right: 10px;">📤 Share</button>
-          <button onclick="printItinerary()" style="background: #4caf50;">🖨️ Print</button>
+        <div class="modal-actions">
+          <button onclick="shareItinerary()">📤 Share</button>
+          <button onclick="printItinerary()">🖨️ Print</button>
         </div>
       </div>
     </div>
@@ -107,13 +82,48 @@
 
   <script>
     let dayCount = 0;
+    let isLoading = false;
 
-    // Load itinerary on page load
     window.addEventListener('load', function() {
       loadItinerary();
     });
 
-    function addDay() {
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"]/g, function(character) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;'
+        }[character];
+      });
+    }
+
+    function showSaveStatus(message) {
+      const status = document.getElementById('save-status');
+      status.textContent = message;
+    }
+
+    function formatDayDate(value) {
+      if (!value) return '';
+      const date = new Date(value + 'T00:00:00');
+      return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function updatePlannerState() {
+      const totalDays = document.querySelectorAll('.day-box').length;
+      const totalDestinations = document.querySelectorAll('.destination').length;
+      const totalActivities = document.querySelectorAll('.activity').length;
+      const totalItems = totalDestinations + totalActivities;
+
+      document.getElementById('total-days').textContent = totalDays;
+      document.getElementById('total-destinations').textContent = totalDestinations;
+      document.getElementById('total-activities').textContent = totalActivities;
+      document.getElementById('total-items').textContent = totalItems;
+      document.getElementById('empty-state').style.display = totalDays ? 'none' : 'block';
+    }
+
+    function addDay(dayData) {
       dayCount++;
       const container = document.getElementById("itinerary-container");
 
@@ -122,12 +132,18 @@
       dayBox.setAttribute("id", `day-${dayCount}`);
 
       dayBox.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="day-header">
           <h3>Day ${dayCount}</h3>
-          <button onclick="removeDay(${dayCount})" style="background: #f44336; font-size: 14px; padding: 5px 10px;">❌ Remove Day</button>
+          <button class="danger-button" onclick="removeDay(${dayCount})">❌ Remove Day</button>
         </div>
-        <label>Notes for the Day:</label>
-        <textarea placeholder="General notes for this day..." onchange="saveItinerary()"></textarea>
+        <div class="day-details-grid">
+          <div>
+            <label for="day-${dayCount}-date">Date:</label>
+            <input id="day-${dayCount}-date" type="date" oninput="saveItinerary()">
+          </div>
+        </div>
+        <label for="day-${dayCount}-notes">Notes for the Day:</label>
+        <textarea id="day-${dayCount}-notes" placeholder="General notes for this day..." oninput="saveItinerary()"></textarea>
         
         <div class="buttons">
           <button type="button" onclick="addDestination(${dayCount})">📍 Add Destination</button>
@@ -138,7 +154,18 @@
       `;
 
       container.appendChild(dayBox);
-      saveItinerary();
+      if (dayData) {
+        dayBox.querySelector("input[type='date']").value = dayData.date || '';
+        dayBox.querySelector('textarea').value = dayData.notes || '';
+        (dayData.items || []).forEach(function(itemData) {
+          addItineraryItem(dayCount, itemData.type, itemData);
+        });
+      }
+      updatePlannerState();
+
+      if (!isLoading) {
+        saveItinerary();
+      }
     }
 
     function removeDay(dayId) {
@@ -150,42 +177,44 @@
     }
 
     function addDestination(dayId) {
-      const itemsContainer = document.getElementById(`items-day-${dayId}`);
-      const destination = document.createElement("div");
-      destination.classList.add("destination");
-      const itemId = Date.now();
-
-      destination.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4>📍 Destination</h4>
-          <button onclick="removeItem(this)" style="background: #f44336; font-size: 12px; padding: 3px 8px;">✕</button>
-        </div>
-        <input type="text" placeholder="Destination name" onchange="saveItinerary()">
-        <input type="time" onchange="saveItinerary()">
-        <textarea placeholder="Notes about this destination..." onchange="saveItinerary()"></textarea>
-      `;
-
-      itemsContainer.appendChild(destination);
-      saveItinerary();
+      addItineraryItem(dayId, 'destination');
     }
 
     function addActivity(dayId) {
-      const itemsContainer = document.getElementById(`items-day-${dayId}`);
-      const activity = document.createElement("div");
-      activity.classList.add("activity");
+      addItineraryItem(dayId, 'activity');
+    }
 
-      activity.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4>🎯 Activity</h4>
-          <button onclick="removeItem(this)" style="background: #f44336; font-size: 12px; padding: 3px 8px;">✕</button>
+    function addItineraryItem(dayId, type, itemData) {
+      const itemsContainer = document.getElementById(`items-day-${dayId}`);
+      const item = document.createElement("div");
+      const isDestination = type === 'destination';
+      const itemId = `${type}-${dayId}-${Date.now()}`;
+      item.classList.add(type);
+
+      item.innerHTML = `
+        <div class="item-header">
+          <h4>${isDestination ? '📍 Destination' : '🎯 Activity'}</h4>
+          <button class="danger-button small-button" onclick="removeItem(this)" aria-label="Remove ${isDestination ? 'destination' : 'activity'}">✕</button>
         </div>
-        <input type="text" placeholder="Activity name" onchange="saveItinerary()">
-        <input type="time" onchange="saveItinerary()">
-        <textarea placeholder="Notes about this activity..." onchange="saveItinerary()"></textarea>
+        <label class="visually-hidden" for="${itemId}-name">${isDestination ? 'Destination name' : 'Activity name'}</label>
+        <input id="${itemId}-name" type="text" placeholder="${isDestination ? 'Destination name' : 'Activity name'}" oninput="saveItinerary()">
+        <label class="visually-hidden" for="${itemId}-time">${isDestination ? 'Destination time' : 'Activity time'}</label>
+        <input id="${itemId}-time" type="time" oninput="saveItinerary()">
+        <label class="visually-hidden" for="${itemId}-notes">Notes about this ${isDestination ? 'destination' : 'activity'}</label>
+        <textarea id="${itemId}-notes" placeholder="Notes about this ${isDestination ? 'destination' : 'activity'}..." oninput="saveItinerary()"></textarea>
       `;
 
-      itemsContainer.appendChild(activity);
-      saveItinerary();
+      itemsContainer.appendChild(item);
+
+      if (itemData) {
+        item.querySelector("input[type='text']").value = itemData.name || '';
+        item.querySelector("input[type='time']").value = itemData.time || '';
+        item.querySelector('textarea').value = itemData.notes || '';
+      }
+
+      if (!isLoading) {
+        saveItinerary();
+      }
     }
 
     function removeItem(button) {
@@ -205,6 +234,7 @@
       days.forEach((day) => {
         const dayData = {
           id: day.id,
+          date: day.querySelector("input[type='date']").value,
           notes: day.querySelector("textarea").value,
           items: []
         };
@@ -224,42 +254,32 @@
       });
 
       localStorage.setItem('travelItinerary', JSON.stringify(itineraryData));
+      updatePlannerState();
+
+      if (!isLoading) {
+        showSaveStatus('Saved just now');
+      }
     }
 
     function loadItinerary() {
       const savedItinerary = localStorage.getItem('travelItinerary');
+      isLoading = true;
+      document.getElementById("itinerary-container").innerHTML = '';
+      dayCount = 0;
+
       if (savedItinerary) {
         const itineraryData = JSON.parse(savedItinerary);
-        dayCount = itineraryData.dayCount || 0;
 
-        // Clear current itinerary
-        document.getElementById("itinerary-container").innerHTML = '';
-
-        // Rebuild itinerary
-        itineraryData.days.forEach((dayData, index) => {
-          addDay();
-          const currentDay = document.getElementById(dayData.id);
-          if (currentDay) {
-            currentDay.querySelector("textarea").value = dayData.notes || '';
-
-            dayData.items.forEach((itemData) => {
-              if (itemData.type === "destination") {
-                addDestination(index + 1);
-              } else {
-                addActivity(index + 1);
-              }
-
-              const items = currentDay.querySelectorAll(".items > div");
-              const lastItem = items[items.length - 1];
-              if (lastItem) {
-                lastItem.querySelector("input[type='text']").value = itemData.name || '';
-                lastItem.querySelector("input[type='time']").value = itemData.time || '';
-                lastItem.querySelector("textarea").value = itemData.notes || '';
-              }
-            });
-          }
+        (itineraryData.days || []).forEach(function(dayData) {
+          addDay(dayData);
         });
+        showSaveStatus('Loaded saved itinerary');
+      } else {
+        showSaveStatus('Ready to plan');
       }
+
+      isLoading = false;
+      updatePlannerState();
     }
 
     function clearAll() {
@@ -267,11 +287,12 @@
         localStorage.removeItem('travelItinerary');
         document.getElementById("itinerary-container").innerHTML = '';
         dayCount = 0;
+        updatePlannerState();
+        showSaveStatus('Itinerary cleared');
       }
     }
 
     function shareItinerary() {
-      let itineraryText = "🌍 My Travel Itinerary:\n\n";
       const days = document.querySelectorAll(".day-box");
 
       if (days.length === 0) {
@@ -279,8 +300,12 @@
         return;
       }
 
+      const itineraryTitle = 'My Travel Itinerary';
+      let itineraryText = `🌍 ${itineraryTitle}\n\n`;
+
       days.forEach((day, index) => {
-        itineraryText += `📅 Day ${index + 1}:\n`;
+        const dayDate = formatDayDate(day.querySelector("input[type='date']").value);
+        itineraryText += `📅 Day ${index + 1}${dayDate ? ` - ${dayDate}` : ''}:\n`;
 
         const notes = day.querySelector("textarea").value;
         if (notes) itineraryText += `📝 Notes: ${notes}\n`;
@@ -298,6 +323,10 @@
           itineraryText += `\n`;
         });
 
+        if (items.length === 0) {
+          itineraryText += "No plans added yet.\n";
+        }
+
         itineraryText += "\n";
       });
 
@@ -305,11 +334,10 @@
 
       if (navigator.share) {
         navigator.share({
-          title: "My Travel Itinerary",
+          title: itineraryTitle,
           text: itineraryText
         }).catch(err => console.log("Share canceled:", err));
       } else {
-        // Create a text area and copy to clipboard
         const textArea = document.createElement('textarea');
         textArea.value = itineraryText;
         document.body.appendChild(textArea);
@@ -332,21 +360,33 @@
         return;
       }
 
-      let htmlContent = '';
+      const totalDays = days.length;
+      const totalItems = document.querySelectorAll(".destination, .activity").length;
+      const totalDestinations = document.querySelectorAll(".destination").length;
+      const totalActivities = document.querySelectorAll(".activity").length;
+      let htmlContent = `
+        <section class="preview-summary">
+          <div><strong>${totalDays}</strong><br>Days</div>
+          <div><strong>${totalDestinations}</strong><br>Destinations</div>
+          <div><strong>${totalActivities}</strong><br>Activities</div>
+          <div><strong>${totalItems}</strong><br>Total Items</div>
+        </section>`;
       
       days.forEach((day, index) => {
         const dayNumber = index + 1;
+        const dayDate = formatDayDate(day.querySelector("input[type='date']").value);
         htmlContent += `
-          <div style="margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 5px solid #4caf50;">
-            <h3 style="color: #4caf50; margin-bottom: 15px; display: flex; align-items: center;">
-              <span style="background: #4caf50; color: white; border-radius: 50%; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 14px;">${dayNumber}</span>
+          <div class="preview-day">
+            <h3>
+              <span>${dayNumber}</span>
               Day ${dayNumber}
-            </h3>`;
+            </h3>
+            ${dayDate ? `<p class="preview-day-date">📅 ${escapeHtml(dayDate)}</p>` : ''}`;
 
         const notes = day.querySelector("textarea").value;
         if (notes) {
-          htmlContent += `<div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #ffc107;">
-            <strong>📝 Day Notes:</strong> ${notes}
+          htmlContent += `<div class="preview-note">
+            <strong>📝 Day Notes:</strong> ${escapeHtml(notes)}
           </div>`;
         }
 
@@ -358,63 +398,57 @@
             const note = item.querySelector("textarea").value;
             const isDestination = item.classList.contains("destination");
             const icon = isDestination ? "📍" : "🎯";
-            const bgColor = isDestination ? "#fff8e1" : "#e3f2fd";
-            const borderColor = isDestination ? "#ff9800" : "#2196f3";
+            const itemClass = isDestination ? 'preview-destination' : 'preview-activity';
             
             htmlContent += `
-              <div style="background: ${bgColor}; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${borderColor};">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                  <strong style="color: #333; font-size: 16px;">${icon} ${title || (isDestination ? "Destination" : "Activity")}</strong>
-                  ${time ? `<span style="background: white; padding: 4px 8px; border-radius: 15px; font-size: 14px; color: #666;">🕒 ${time}</span>` : ''}
+              <div class="preview-item ${itemClass}">
+                <div class="preview-item-header">
+                  <strong>${icon} ${escapeHtml(title || (isDestination ? "Destination" : "Activity"))}</strong>
+                  ${time ? `<span>🕒 ${escapeHtml(time)}</span>` : ''}
                 </div>
-                ${note ? `<p style="color: #666; margin: 0; font-style: italic;">${note}</p>` : ''}
+                ${note ? `<p>${escapeHtml(note)}</p>` : ''}
               </div>`;
           });
         } else {
-          htmlContent += `<p style="color: #999; font-style: italic;">No activities or destinations added for this day.</p>`;
+          htmlContent += `<p class="preview-empty">No activities or destinations added for this day.</p>`;
         }
         
         htmlContent += `</div>`;
       });
 
-      // Add summary at the end
-      const totalDays = days.length;
-      const totalItems = document.querySelectorAll(".destination, .activity").length;
-      const totalDestinations = document.querySelectorAll(".destination").length;
-      const totalActivities = document.querySelectorAll(".activity").length;
-
-      htmlContent += `
-        <div style="background: linear-gradient(135deg, #4caf50, #45a049); color: white; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px;">
-          <h3 style="margin-bottom: 15px; color: white;">📊 Trip Summary</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
-            <div><strong>${totalDays}</strong><br>Days</div>
-            <div><strong>${totalDestinations}</strong><br>Destinations</div>
-            <div><strong>${totalActivities}</strong><br>Activities</div>
-            <div><strong>${totalItems}</strong><br>Total Items</div>
-          </div>
-        </div>`;
-
       document.getElementById('itinerary-preview-content').innerHTML = htmlContent;
       document.getElementById('itinerary-modal').style.display = 'block';
-      document.body.style.overflow = 'hidden'; // Prevent background scrolling
+      document.body.style.overflow = 'hidden';
     }
 
     function closeItineraryView() {
       document.getElementById('itinerary-modal').style.display = 'none';
-      document.body.style.overflow = 'auto'; // Restore scrolling
+      document.body.style.overflow = 'auto';
     }
 
     function printItinerary() {
       const printContent = document.getElementById('itinerary-preview-content').innerHTML;
       const printWindow = window.open('', '_blank');
+      const itineraryTitle = 'My Travel Itinerary';
       printWindow.document.write(`
         <html>
           <head>
-            <title>My Travel Itinerary</title>
+            <title>${itineraryTitle}</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; }
-              h2 { color: #4caf50; text-align: center; margin-bottom: 30px; }
-              h3 { color: #4caf50; }
+              h2 { color: #2e7d32; text-align: center; margin-bottom: 30px; }
+              h3 { color: #2e7d32; }
+              .preview-day { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 18px; }
+              .preview-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+              .preview-summary div { border: 1px solid #2e7d32; border-radius: 6px; padding: 10px; text-align: center; }
+              .preview-day { border-left: 5px solid #2e7d32; }
+              .preview-day h3 span { background: #2e7d32; color: white; border-radius: 50%; display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; margin-right: 8px; }
+              .preview-day-date { color: #555; font-weight: 700; margin-top: -8px; }
+              .preview-note { background: #fff3cd; border-left: 3px solid #ffc107; padding: 10px; margin-bottom: 12px; }
+              .preview-item { border-left: 3px solid #0b5cad; background: #f8f9fa; padding: 12px; margin-bottom: 10px; }
+              .preview-destination { border-left-color: #8a4b00; }
+              .preview-item-header { display: flex; justify-content: space-between; gap: 10px; }
+              .preview-item p, .preview-empty { color: #666; font-style: italic; }
               .no-print { display: none; }
               @media print {
                 body { margin: 0; }
@@ -423,7 +457,7 @@
             </style>
           </head>
           <body>
-            <h2>🌍 My Travel Itinerary</h2>
+            <h2>🌍 ${itineraryTitle}</h2>
             ${printContent}
             <div style="text-align: center; margin-top: 30px; color: #666; font-size: 12px;">
               Generated by Plan My Way on ${new Date().toLocaleDateString()}
